@@ -1,0 +1,75 @@
+package controllers
+
+import (
+	"bot-helper/internal/domain/repositories"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+type Cmd string
+
+const (
+	CmdStart              Cmd = "/start"
+	CmdTranslateToSlovak  Cmd = "/translate_to_slovak"
+	CmdTranslateToEnglish Cmd = "/translate_to_english"
+)
+
+type Mode uint16
+
+const (
+	ModeTranslateToSlovak Mode = iota
+	ModeTranslateToEnglish
+)
+
+type Handler struct {
+	chatGptRepo     *repositories.ChatGPTRepository
+	ankiWebRepo     *repositories.AnkiWebRepository
+	commandsMap     map[Cmd]repositories.TelegramMessageCallback
+	modeMap         map[int64]Mode
+	messageHandlers map[Mode]repositories.TelegramMessageCallback
+}
+
+func NewHandler(
+	chatGptRepo *repositories.ChatGPTRepository,
+	ankiWebRepo *repositories.AnkiWebRepository,
+) *Handler {
+	h := &Handler{
+		chatGptRepo: chatGptRepo,
+		ankiWebRepo: ankiWebRepo,
+		modeMap:     make(map[int64]Mode),
+	}
+
+	h.commandsMap = map[Cmd]repositories.TelegramMessageCallback{
+		CmdStart:              h.handleCommandStart,
+		CmdTranslateToSlovak:  h.handleCommandTranslateToSlovak,
+		CmdTranslateToEnglish: h.handleCommandTranslateToEnglish,
+	}
+
+	h.messageHandlers = map[Mode]repositories.TelegramMessageCallback{
+		ModeTranslateToSlovak:  h.handleMessageTranslateToSlovak,
+		ModeTranslateToEnglish: h.handleMessageTranslateToEnglish,
+	}
+
+	return h
+}
+
+func (h *Handler) HandleCommand(
+	bot *tgbotapi.BotAPI,
+	update tgbotapi.Update,
+) error {
+	if command, exists := h.commandsMap[Cmd(update.Message.Text)]; exists {
+		return command(bot, update)
+	} else {
+		return h.handleCommandUnknown(bot, update)
+	}
+}
+
+func (h *Handler) HandleMessage(
+	bot *tgbotapi.BotAPI,
+	update tgbotapi.Update,
+) error {
+	if mode, exists := h.messageHandlers[h.modeMap[update.Message.Chat.ID]]; exists {
+		return mode(bot, update)
+	}
+	return h.handleMessageUnknown(bot, update)
+}

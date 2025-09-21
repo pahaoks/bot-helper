@@ -1,0 +1,13 @@
+[Unit]
+Description=Bot Helper service
+After=network.target
+
+[Service]
+Type=simple
+User=administrator
+EnvironmentFile=/home/administrator/.bot-helper.env
+ExecStart=/home/administrator/bot-helper
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

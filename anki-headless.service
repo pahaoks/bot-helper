@@ -1,0 +1,13 @@
+[Unit]
+Description=Anki Desktop headless service
+After=network.target
+
+[Service]
+Type=simple
+User=administrator
+Environment=DISPLAY=:99
+ExecStart=/usr/bin/xvfb-run /snap/bin/anki-desktop
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
