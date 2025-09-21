@@ -8,6 +8,7 @@ User=administrator
 Environment=DISPLAY=:99
 ExecStart=/usr/bin/xvfb-run /snap/bin/anki-desktop
 Restart=on-failure
+RestartSec=60s
 
 [Install]
 WantedBy=multi-user.target
