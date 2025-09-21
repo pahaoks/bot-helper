@@ -25,7 +25,7 @@ func (h *Handler) handleCommandStart(
 		return commands[i] < commands[j]
 	})
 
-	cmdList := strings.Join(commands, "\n")
+	cmdList := strings.Join(commands, "\n\n")
 
 	_, err := bot.Send(tgbotapi.NewMessage(
 		update.Message.Chat.ID,

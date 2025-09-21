@@ -9,9 +9,13 @@ import (
 type Cmd string
 
 const (
-	CmdStart              Cmd = "/start"
-	CmdTranslateToSlovak  Cmd = "/translate_to_slovak"
-	CmdTranslateToEnglish Cmd = "/translate_to_english"
+	CmdStart                Cmd = "/start"
+	CmdTranslateToSlovak    Cmd = "/translate_to_slovak"
+	CmdTranslateToEnglish   Cmd = "/translate_to_english"
+	CmdTranslateToGerman    Cmd = "/translate_to_german"
+	CmdTranslateFromSlovak  Cmd = "/translate_from_slovak"
+	CmdTranslateFromEnglish Cmd = "/translate_from_english"
+	CmdTranslateFromGerman  Cmd = "/translate_from_german"
 )
 
 type Mode uint16
@@ -19,6 +23,10 @@ type Mode uint16
 const (
 	ModeTranslateToSlovak Mode = iota
 	ModeTranslateToEnglish
+	ModeTranslateToGerman
+	ModeTranslateFromSlovak
+	ModeTranslateFromEnglish
+	ModeTranslateFromGerman
 )
 
 type Handler struct {
@@ -40,14 +48,22 @@ func NewHandler(
 	}
 
 	h.commandsMap = map[Cmd]repositories.TelegramMessageCallback{
-		CmdStart:              h.handleCommandStart,
-		CmdTranslateToSlovak:  h.handleCommandTranslateToSlovak,
-		CmdTranslateToEnglish: h.handleCommandTranslateToEnglish,
+		CmdStart:                h.handleCommandStart,
+		CmdTranslateToSlovak:    h.handleCommandTranslateToSlovak,
+		CmdTranslateToEnglish:   h.handleCommandTranslateToEnglish,
+		CmdTranslateToGerman:    h.handleCommandTranslateToGerman,
+		CmdTranslateFromSlovak:  h.handleCommandTranslateFromSlovak,
+		CmdTranslateFromEnglish: h.handleCommandTranslateFromEnglish,
+		CmdTranslateFromGerman:  h.handleCommandTranslateFromGerman,
 	}
 
 	h.messageHandlers = map[Mode]repositories.TelegramMessageCallback{
-		ModeTranslateToSlovak:  h.handleMessageTranslateToSlovak,
-		ModeTranslateToEnglish: h.handleMessageTranslateToEnglish,
+		ModeTranslateToSlovak:    h.handleMessageTranslateToSlovak,
+		ModeTranslateToEnglish:   h.handleMessageTranslateToEnglish,
+		ModeTranslateToGerman:    h.handleMessageTranslateToGerman,
+		ModeTranslateFromSlovak:  h.handleMessageTranslateFromSlovak,
+		ModeTranslateFromEnglish: h.handleMessageTranslateFromEnglish,
+		ModeTranslateFromGerman:  h.handleMessageTranslateFromGerman,
 	}
 
 	return h
