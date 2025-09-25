@@ -11,7 +11,7 @@ import (
 type ChatGPTConfig struct {
 	BaseURL string `default:"https://api.openai.com"`
 	APIKey  string `default:""`
-	Model   string `default:"gpt-5-nano"`
+	Model   string `default:"gpt-5-mini"`
 }
 
 type ChatGPTRepository struct {
