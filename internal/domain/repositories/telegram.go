@@ -3,6 +3,8 @@ package repositories
 import (
 	"bot-helper/pkg/logger"
 	"fmt"
+	"io"
+	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -19,6 +21,7 @@ type Update = tgbotapi.Update
 type TelegramRepository struct {
 	config TelegramConfig
 	logger logger.Logger
+	bot    *BotAPI
 }
 
 // TelegramMessageCallback defines the signature for the callback function
@@ -35,6 +38,7 @@ func NewTelegramRepository(
 	return &TelegramRepository{
 		config: config,
 		logger: logger,
+		bot:    nil,
 	}
 }
 
@@ -42,6 +46,10 @@ func NewTelegramRepository(
 func (r *TelegramRepository) Run(
 	callback TelegramMessageCallback,
 ) (err error) {
+	if r.bot != nil {
+		return fmt.Errorf("bot is already running")
+	}
+
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			r.logger.Error("recovered from panic:", recovered)
@@ -55,6 +63,7 @@ func (r *TelegramRepository) Run(
 		return err
 	}
 
+	r.bot = bot
 	bot.Debug = true
 
 	r.logger.Info("authorized on account %s", bot.Self.UserName)
@@ -73,4 +82,27 @@ func (r *TelegramRepository) Run(
 	}
 
 	return nil
+}
+
+func (r *TelegramRepository) GetFileContent(
+	fileID string,
+) ([]byte, error) {
+	file, err := r.bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+	if err != nil {
+		return nil, err
+	}
+
+	link := file.Link(r.bot.Token)
+
+	resp, err := http.Get(link)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get file: status %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }

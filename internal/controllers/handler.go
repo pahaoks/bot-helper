@@ -3,6 +3,7 @@ package controllers
 import (
 	"bot-helper/internal/domain/entities"
 	"bot-helper/internal/domain/repositories"
+	"bot-helper/pkg/voiceconverter"
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,16 +38,22 @@ type Handler struct {
 	commandsMap     map[Cmd]repositories.TelegramMessageCallback
 	modeMap         map[int64]Mode
 	messageHandlers map[Mode]repositories.TelegramMessageCallback
+	voiceConverter  *voiceconverter.VoiceConverter
+	telegramRepo    *repositories.TelegramRepository
 }
 
 func NewHandler(
 	chatGptRepo *repositories.ChatGPTRepository,
 	ankiWebRepo *repositories.AnkiWebRepository,
+	voiceConverter *voiceconverter.VoiceConverter,
+	telegramRepo *repositories.TelegramRepository,
 ) *Handler {
 	h := &Handler{
-		chatGptRepo: chatGptRepo,
-		ankiWebRepo: ankiWebRepo,
-		modeMap:     make(map[int64]Mode),
+		chatGptRepo:    chatGptRepo,
+		ankiWebRepo:    ankiWebRepo,
+		modeMap:        make(map[int64]Mode),
+		voiceConverter: voiceConverter,
+		telegramRepo:   telegramRepo,
 	}
 
 	h.commandsMap = map[Cmd]repositories.TelegramMessageCallback{
@@ -96,17 +103,57 @@ func (h *Handler) modelPrompt(
 	bot *tgbotapi.BotAPI,
 	update tgbotapi.Update,
 	prefix string,
-) (entities.ChatGPTResponse, error) {
-	res, err := h.chatGptRepo.Prompt(prefix + update.Message.Text)
+) (*entities.ChatGPTResponse, error) {
+	text := update.Message.Text
+	var err error
+
+	if update.Message.Voice != nil {
+		text, err = h.translateVoice(update)
+		if err != nil {
+			return nil, h.logError(bot, update, err)
+		}
+	}
+
+	res, err := h.chatGptRepo.Prompt(prefix + text)
 	if err != nil {
-		return entities.ChatGPTResponse{}, err
+		return nil, h.logError(bot, update, err)
 	}
 	if res.Error != nil && res.Error.Message != "" {
-		bot.Send(tgbotapi.NewMessage(
-			update.Message.Chat.ID,
-			res.Error.Message,
-		))
-		err = fmt.Errorf("ChatGPT error: %v", res.Error.Message)
+		return nil, h.logError(
+			bot, update, fmt.Errorf("chatgpt error: %s", res.Error.Message))
 	}
-	return res, err
+
+	return &res, err
+}
+
+func (h *Handler) translateVoice(
+	update tgbotapi.Update,
+) (string, error) {
+	fileBytes, err := h.telegramRepo.GetFileContent(update.Message.Voice.FileID)
+	if err != nil {
+		return "", err
+	}
+	mp3File, err := h.voiceConverter.OggToMp3(fileBytes)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := h.chatGptRepo.TranscribeAudio(mp3File)
+	if err != nil {
+		return "", err
+	}
+
+	return res.Text, nil
+}
+
+func (h *Handler) logError(
+	bot *tgbotapi.BotAPI,
+	update tgbotapi.Update,
+	err error,
+) error {
+	bot.Send(tgbotapi.NewMessage(
+		update.Message.Chat.ID,
+		fmt.Sprintf("error handling update: %v", err),
+	))
+	return err
 }

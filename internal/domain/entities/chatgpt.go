@@ -88,3 +88,7 @@ func (r *ChatGPTResponse) GetText() string {
 
 	return res
 }
+
+type ChatGPTTranscriptionResponse struct {
+	Text string `json:"text"`
+}
