@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"bot-helper/internal/domain/entities"
 	"bot-helper/internal/domain/repositories"
+	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -88,4 +90,23 @@ func (h *Handler) HandleMessage(
 		return mode(bot, update)
 	}
 	return h.handleMessageUnknown(bot, update)
+}
+
+func (h *Handler) modelPrompt(
+	bot *tgbotapi.BotAPI,
+	update tgbotapi.Update,
+	prefix string,
+) (entities.ChatGPTResponse, error) {
+	res, err := h.chatGptRepo.Prompt(prefix + update.Message.Text)
+	if err != nil {
+		return entities.ChatGPTResponse{}, err
+	}
+	if res.Error != nil && res.Error.Message != "" {
+		bot.Send(tgbotapi.NewMessage(
+			update.Message.Chat.ID,
+			res.Error.Message,
+		))
+		err = fmt.Errorf("ChatGPT error: %v", res.Error.Message)
+	}
+	return res, err
 }

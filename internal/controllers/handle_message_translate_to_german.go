@@ -1,13 +1,15 @@
 package controllers
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 // handleMessageTranslateToGerman handles messages in translate to German mode
 func (h *Handler) handleMessageTranslateToGerman(
 	bot *tgbotapi.BotAPI,
 	update tgbotapi.Update,
 ) error {
-	res, err := h.chatGptRepo.Prompt("Переведи на немецкий, коротко: " + update.Message.Text)
+	res, err := h.modelPrompt(bot, update, "Переведи на немецкий, коротко: ")
 	if err != nil {
 		return err
 	}

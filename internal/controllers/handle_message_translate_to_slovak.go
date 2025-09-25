@@ -1,13 +1,15 @@
 package controllers
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 // handleMessageTranslateToSlovak handles messages in translate to Slovak mode
 func (h *Handler) handleMessageTranslateToSlovak(
 	bot *tgbotapi.BotAPI,
 	update tgbotapi.Update,
 ) error {
-	res, err := h.chatGptRepo.Prompt("Переведи на словацкий, коротко: " + update.Message.Text)
+	res, err := h.modelPrompt(bot, update, "Переведи на словацкий, коротко: ")
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,12 @@ type ChatGPTResponse struct {
 	Billing    struct {
 		Payer string `json:"payer"`
 	} `json:"billing"`
-	Error             interface{} `json:"error"`
+	Error *struct {
+		Code    string      `json:"code"`
+		Message string      `json:"message"`
+		Param   interface{} `json:"param"`
+		Type    string      `json:"type"`
+	} `json:"error"`
 	IncompleteDetails interface{} `json:"incomplete_details"`
 	Instructions      interface{} `json:"instructions"`
 	MaxOutputTokens   interface{} `json:"max_output_tokens"`
