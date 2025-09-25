@@ -104,17 +104,15 @@ func (h *Handler) modelPrompt(
 	update tgbotapi.Update,
 	prefix string,
 ) (*entities.ChatGPTResponse, error) {
-	text := update.Message.Text
-	var err error
-
 	if update.Message.Voice != nil {
-		text, err = h.translateVoice(update)
+		text, err := h.translateVoice(update)
 		if err != nil {
 			return nil, h.logError(bot, update, err)
 		}
+		update.Message.Text = text
 	}
 
-	res, err := h.chatGptRepo.Prompt(prefix + text)
+	res, err := h.chatGptRepo.Prompt(prefix + update.Message.Text)
 	if err != nil {
 		return nil, h.logError(bot, update, err)
 	}
