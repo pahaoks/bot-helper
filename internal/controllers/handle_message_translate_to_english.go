@@ -14,6 +14,14 @@ func (h *Handler) handleMessageTranslateToEnglish(
 		return err
 	}
 
+	_, err = bot.Send(tgbotapi.NewMessage(
+		update.Message.Chat.ID,
+		res.GetText(),
+	))
+	if err != nil {
+		return err
+	}
+
 	err = h.ankiWebRepo.AddNote(
 		"English", "Basic (and reversed card)",
 		res.GetText(),
